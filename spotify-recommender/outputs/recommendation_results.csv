@@ -1,0 +1,41 @@
+track_name,track_artist,playlist_genre,track_popularity,similarity_score,seed_song,model
+Part-Time Lover,Dabin,edm,53,0.9864,Blinding Lights,content_based_cosine
+POP/STARS,K/DA,pop,75,0.9838,Blinding Lights,content_based_cosine
+Criminal,Framing Hanley,rock,18,0.9791,Blinding Lights,content_based_cosine
+Painkiller,DREAMERS,pop,56,0.978,Blinding Lights,content_based_cosine
+It's All on U - T-Mass & LZRD Remix,ILLENIUM,rap,61,0.9768,Blinding Lights,content_based_cosine
+Quiero Ver,Café Tacvba,rock,64,0.9748,Blinding Lights,content_based_cosine
+Cold Blood (feat. Jeffrey James),Tungevaag,edm,45,0.9722,Blinding Lights,content_based_cosine
+Got You There,Matrix & Futurebound,edm,52,0.972,Blinding Lights,content_based_cosine
+Kids In America,Kim Wilde,pop,4,0.9717,Blinding Lights,content_based_cosine
+On Our Own,Showtek,edm,33,0.9712,Blinding Lights,content_based_cosine
+Bohemian Rhapsody - Remastered 2011,Queen,rock,29,1.0,Bohemian Rhapsody,content_based_cosine
+As We Lay,Shirley Murdock,r&b,45,0.9568,Bohemian Rhapsody,content_based_cosine
+Jubilee Street,Nick Cave & The Bad Seeds,rock,51,0.9524,Bohemian Rhapsody,content_based_cosine
+The Drugs Don't Work,The Verve,rock,11,0.9507,Bohemian Rhapsody,content_based_cosine
+Tell Your Friends,The Weeknd,r&b,68,0.9401,Bohemian Rhapsody,content_based_cosine
+Taxi,J. Blackfoot,rap,32,0.9379,Bohemian Rhapsody,content_based_cosine
+Gracefully Broken,Tasha Cobbs Leonard,r&b,50,0.9321,Bohemian Rhapsody,content_based_cosine
+Tell Your Friends,The Weeknd,r&b,3,0.9311,Bohemian Rhapsody,content_based_cosine
+Too Fast,Sonder,r&b,63,0.9302,Bohemian Rhapsody,content_based_cosine
+I See Your Smile,Gloria Estefan,latin,34,0.9289,Bohemian Rhapsody,content_based_cosine
+God's Plan,Drake,rap,12,1.0,God's Plan,content_based_cosine
+God's Plan,Drake,rap,17,0.9994,God's Plan,content_based_cosine
+Asi Son Mis Dias,Control Machete,rap,45,0.9512,God's Plan,content_based_cosine
+Lotto,Rotimi,rap,0,0.945,God's Plan,content_based_cosine
+Gangsta's Paradise,Coolio,pop,80,0.9028,God's Plan,content_based_cosine
+I'm Cool - No Rap Version,Anthony Hamilton,r&b,37,0.9017,God's Plan,content_based_cosine
+Where I Wanna Be Boy,Miss Jones,r&b,21,0.9015,God's Plan,content_based_cosine
+I Know There's Gonna Be (Good Times) [feat. Popcaan],Young Thug,pop,57,0.8995,God's Plan,content_based_cosine
+Choir - Remix,Guy Sebastian,pop,54,0.8977,God's Plan,content_based_cosine
+single,Musiq Soulchild,r&b,23,0.8929,God's Plan,content_based_cosine
+Mata Montana,Mata,rap,64,0.9586,bad guy,content_based_cosine
+Ready or Not,Fugees,rap,8,0.9398,bad guy,content_based_cosine
+California,Childish Gambino,r&b,58,0.9339,bad guy,content_based_cosine
+Long Spoon,Entre Linhas,rap,38,0.9288,bad guy,content_based_cosine
+bad guy (with Justin Bieber),Billie Eilish,pop,83,0.9251,bad guy,content_based_cosine
+Play for Keeps (feat. La Capone),Rondonumbanine,rap,44,0.9247,bad guy,content_based_cosine
+California,Childish Gambino,pop,2,0.9235,bad guy,content_based_cosine
+Yl,Aivarask,edm,39,0.9213,bad guy,content_based_cosine
+Running Man,Rexx Life Raj,rap,33,0.9206,bad guy,content_based_cosine
+Instinct - MXXWLL Edit,BB Diamond,r&b,24,0.9154,bad guy,content_based_cosine
