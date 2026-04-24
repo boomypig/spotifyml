@@ -28,6 +28,26 @@ import pandas as pd
 # Allow imports from src/ whether or not the package is installed
 sys.path.insert(0, os.path.dirname(__file__))
 
+
+class _Tee:
+    """Write every print() to both the terminal and a log file simultaneously."""
+
+    def __init__(self, terminal, logfile):
+        self._terminal = terminal
+        self._logfile = logfile
+
+    def write(self, message):
+        self._terminal.write(message)
+        self._logfile.write(message)
+
+    def flush(self):
+        self._terminal.flush()
+        self._logfile.flush()
+
+    # Make sure code that checks sys.stdout.isatty() doesn't crash
+    def isatty(self):
+        return self._terminal.isatty()
+
 from src.data_cleaning import download_dataset, load_data, inspect_data, clean_data
 from src.features import (
     AUDIO_FEATURES,
@@ -90,6 +110,13 @@ def _section(title: str) -> None:
 def main() -> None:
     os.makedirs("outputs/graphs", exist_ok=True)
     os.makedirs("outputs", exist_ok=True)
+
+    # Redirect all print() output to both console and a log file
+    log_path = "outputs/console_output.txt"
+    from datetime import datetime
+    _log_file = open(log_path, "a", encoding="utf-8")
+    _log_file.write(f"\n{'='*68}\n  RUN: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n{'='*68}\n")
+    sys.stdout = _Tee(sys.__stdout__, _log_file)
 
     print("\n" + "█" * 68)
     print("  SPOTIFY SONG RECOMMENDATION SYSTEM")
@@ -510,7 +537,13 @@ FUTURE WORK
     print("  PIPELINE COMPLETE")
     print(f"  Graphs   → outputs/graphs/")
     print(f"  Results  → outputs/recommendation_results.csv")
+    print(f"  Console  → {log_path}")
     print("█" * 68)
+
+    # Restore stdout and close the log file
+    sys.stdout = sys.__stdout__
+    _log_file.close()
+    print(f"Full console output saved to '{log_path}'.")
 
 
 if __name__ == "__main__":
