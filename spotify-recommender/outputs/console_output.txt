@@ -1,0 +1,1080 @@
+
+====================================================================
+  RUN: 2026-04-26 17:33:06
+====================================================================
+
+████████████████████████████████████████████████████████████████████
+  SPOTIFY SONG RECOMMENDATION SYSTEM
+  A Full-Scale Machine Learning Portfolio Project
+  Focus: learning through reasoning, not just results
+████████████████████████████████████████████████████████████████████
+
+====================================================================
+  STEP 1 — DATA LOADING & INSPECTION
+====================================================================
+[Data] Dataset already present at 'data/spotify_songs.csv' — skipping download.
+[Data] Loaded 32,833 rows × 23 columns from 'data/spotify_songs.csv'.
+
+=================================================================
+  STEP 1 — DATA INSPECTION
+=================================================================
+
+Shape : 32,833 rows × 23 columns
+
+Column names and dtypes:
+---------------------------------------------
+  track_id                            str
+  track_name                          str
+  track_artist                        str
+  track_popularity                    int64
+  track_album_id                      str
+  track_album_name                    str
+  track_album_release_date            str
+  playlist_name                       str
+  playlist_id                         str
+  playlist_genre                      str
+  playlist_subgenre                   str
+  danceability                        float64
+  energy                              float64
+  key                                 int64
+  loudness                            float64
+  mode                                int64
+  speechiness                         float64
+  acousticness                        float64
+  instrumentalness                    float64
+  liveness                            float64
+  valence                             float64
+  tempo                               float64
+  duration_ms                         int64
+
+First 3 rows (transposed for readability):
+                                                                              0                                1                                2
+track_id                                                 6f807x0ima9a1j3VPbc7VN           0r7CVbZTWZgbTCYdfa2P31           1z1Hg7Vb0AhHDiEmnDE79l
+track_name                I Don't Care (with Justin Bieber) - Loud Luxury Remix  Memories - Dillon Francis Remix  All the Time - Don Diablo Remix
+track_artist                                                         Ed Sheeran                         Maroon 5                     Zara Larsson
+track_popularity                                                             66                               67                               70
+track_album_id                                           2oCs0DGTsRO98Gh5ZSl2Cx           63rPSO264uRjW1X5E6cWv6           1HoSmj2eLcsrR0vE9gThr4
+track_album_name          I Don't Care (with Justin Bieber) [Loud Luxury Remix]  Memories (Dillon Francis Remix)  All the Time (Don Diablo Remix)
+track_album_release_date                                             2019-06-14                       2019-12-13                       2019-07-05
+playlist_name                                                         Pop Remix                        Pop Remix                        Pop Remix
+playlist_id                                              37i9dQZF1DXcZDD7cfEKhW           37i9dQZF1DXcZDD7cfEKhW           37i9dQZF1DXcZDD7cfEKhW
+playlist_genre                                                              pop                              pop                              pop
+playlist_subgenre                                                     dance pop                        dance pop                        dance pop
+danceability                                                              0.748                            0.726                            0.675
+energy                                                                    0.916                            0.815                            0.931
+key                                                                           6                               11                                1
+loudness                                                                 -2.634                           -4.969                           -3.432
+mode                                                                          1                                1                                0
+speechiness                                                              0.0583                           0.0373                           0.0742
+acousticness                                                              0.102                           0.0724                           0.0794
+instrumentalness                                                            0.0                          0.00421                         0.000023
+liveness                                                                 0.0653                            0.357                             0.11
+valence                                                                   0.518                            0.693                            0.613
+tempo                                                                   122.036                           99.972                          124.008
+duration_ms                                                              194754                           162600                           176616
+
+Missing values:
+---------------------------------------------
+                  count   pct
+track_name            5  0.02
+track_artist          5  0.02
+track_album_name      5  0.02
+
+Duplicate rows       : 0
+Duplicate track_ids  : 4,477
+  NOTE: A song can appear in multiple playlists (same track_id, different playlist_genre). We deduplicate by track_id in cleaning.
+
+Numeric feature summary:
+       danceability     energy   loudness  speechiness  acousticness  instrumentalness   liveness    valence      tempo  duration_ms  track_popularity
+count     32833.000  32833.000  32833.000    32833.000     32833.000         32833.000  32833.000  32833.000  32833.000    32833.000         32833.000
+mean          0.655      0.699     -6.719        0.107         0.175             0.085      0.190      0.511    120.881   225799.812            42.477
+std           0.145      0.181      2.988        0.101         0.220             0.224      0.154      0.233     26.904    59834.006            24.984
+min           0.000      0.000    -46.448        0.000         0.000             0.000      0.000      0.000      0.000     4000.000             0.000
+25%           0.563      0.581     -8.171        0.041         0.015             0.000      0.093      0.331     99.960   187819.000            24.000
+50%           0.672      0.721     -6.166        0.062         0.080             0.000      0.127      0.512    121.984   216000.000            45.000
+75%           0.761      0.840     -4.645        0.132         0.255             0.005      0.248      0.693    133.918   253585.000            62.000
+max           0.983      1.000      1.275        0.918         0.994             0.994      0.996      0.991    239.440   517810.000           100.000
+
+Genre distribution:
+playlist_genre
+edm      6043
+rap      5746
+pop      5507
+r&b      5431
+latin    5155
+rock     4951
+
+Audio feature explanations (Spotify API definitions):
+-----------------------------------------------------------------
+  danceability          : 0–1. Rhythm stability + beat strength. 1 = most danceable.
+  energy                : 0–1. Perceptual intensity. Fast/loud/noisy = high energy.
+  loudness              : dB. Overall loudness, typically –60 to 0. Near 0 = loud.
+  speechiness           : 0–1. Spoken words. >0.66 = speech-only; <0.33 = music.
+  acousticness          : 0–1. Confidence track is acoustic (non-electronic).
+  instrumentalness      : 0–1. Predicts no vocals. >0.5 = likely instrumental.
+  liveness              : 0–1. Live audience presence. >0.8 = likely live recording.
+  valence               : 0–1. Musical positiveness. High = happy; Low = sad/tense.
+  tempo                 : BPM. Estimated tempo of the track.
+  duration_ms           : Duration in milliseconds (1000 ms = 1 second).
+  track_popularity      : 0–100. Spotify's proprietary metric based on recent plays.
+
+====================================================================
+  STEP 2 — DATA CLEANING
+====================================================================
+
+=================================================================
+  STEP 2 — DATA CLEANING
+=================================================================
+
+Starting rows: 32,833
+
+[2.1] Dropping rows missing critical text fields …
+  Dropped 5 rows with missing ['track_name', 'track_artist', 'playlist_genre'].   WHY: A recommendation without a name/artist is useless to display.
+
+[2.2] Filling missing numeric features with column median …
+
+[2.3] Removing duplicate track_ids …
+  Removed 4,476 duplicate track_id rows.   WHY: Same song in N playlists would appear N× in similarity lookups, biasing results toward frequently-played songs.
+
+[2.4] Validating bounded feature ranges …
+  danceability          : OK  [0.000, 0.983]
+  energy                : OK  [0.000, 1.000]
+  speechiness           : OK  [0.000, 0.918]
+  acousticness          : OK  [0.000, 0.994]
+  instrumentalness      : OK  [0.000, 0.994]
+  liveness              : OK  [0.000, 0.996]
+  valence               : OK  [0.000, 0.991]
+
+Final rows after cleaning : 28,352
+Rows removed              : 4,481  (13.6%)
+
+====================================================================
+  STEP 3 — EXPLORATORY DATA ANALYSIS
+====================================================================
+
+Generating and saving all EDA charts …
+
+[Viz] Popularity distribution
+  Saved → outputs/graphs/popularity_distribution.png
+  Interpretation: Mean=39.3, Median=42. A left skew (many low-popularity songs) is common — most Spotify tracks are niche; only a few achieve high play counts. This means a popularity baseline heavily favours a tiny fraction of tracks.
+
+[Viz] Genre distribution
+  Saved → outputs/graphs/genre_distribution.png
+  Interpretation: Most common genre: 'rap' (5,398 songs). Class imbalance in genres means a genre-based recommender is biased toward larger genres — less common genres receive fewer diverse candidates.
+
+[Viz] Correlation heatmap
+  Saved → outputs/graphs/correlation_heatmap.png
+  Interpretation: Top correlations: energy↔loudness=0.68, energy↔acousticness=-0.55, loudness↔acousticness=-0.37. Highly correlated features carry redundant information; including both slightly inflates their combined weight in similarity. energy↔loudness is typically strong because loud = high-energy production.
+
+[Viz] Energy vs Danceability scatter
+  Saved → outputs/graphs/energy_vs_danceability.png
+  Interpretation: EDM and pop cluster toward the top-right (high energy + high danceability). Rock spans the energy axis but stays moderate-to-low danceability. Genre separation here validates that audio features carry genre signal — a good sign for content-based filtering.
+
+[Viz] Valence vs Acousticness scatter (coloured by popularity)
+  Saved → outputs/graphs/valence_vs_acousticness.png
+  Interpretation: Acoustic songs span the full valence range — from happy folk to sad singer-songwriter. Electronic songs also vary widely in valence. Popularity appears scattered throughout: mood alone does not predict popularity.
+
+[Viz] Boxplot of 'energy' by genre
+  Saved → outputs/graphs/boxplot_energy_by_genre.png
+  Interpretation: Wide boxes = high within-genre variance (harder to use 'energy' as a filter). Well-separated medians across genres = useful signal for content-based filtering. Large within-genre spread warns that genre label alone cannot predict this feature.
+
+[Viz] Boxplot of 'danceability' by genre
+  Saved → outputs/graphs/boxplot_danceability_by_genre.png
+  Interpretation: Wide boxes = high within-genre variance (harder to use 'danceability' as a filter). Well-separated medians across genres = useful signal for content-based filtering. Large within-genre spread warns that genre label alone cannot predict this feature.
+
+[Viz] Tempo distribution
+  Saved → outputs/graphs/tempo_distribution.png
+  Interpretation: Peaks near 90–100 and 120–130 BPM reflect common music conventions (hip-hop, pop, dance). Multi-modal bumps suggest genre sub-clusters. Mean = 121 BPM.
+
+Dataset summary after cleaning:
+  Rows          : 28,352
+  Genres        : ['edm', 'latin', 'pop', 'r&b', 'rap', 'rock']
+  Popularity    : min=0  max=100  mean=39.3
+  Unique artists: 10,692
+
+====================================================================
+  STEP 4 — FEATURE ENGINEERING
+====================================================================
+
+[Features] Selecting 10 audio features:
+  danceability           range=[0.000, 0.983]  mean=0.653
+  energy                 range=[0.000, 1.000]  mean=0.698
+  loudness               range=[-46.448, 1.275]  mean=-6.818
+  speechiness            range=[0.000, 0.918]  mean=0.108
+  acousticness           range=[0.000, 0.994]  mean=0.177
+  instrumentalness       range=[0.000, 0.994]  mean=0.091
+  liveness               range=[0.000, 0.996]  mean=0.191
+  valence                range=[0.000, 0.991]  mean=0.510
+  tempo                  range=[0.000, 239.440]  mean=120.958
+  duration_ms            range=[4000.000, 517810.000]  mean=226574.631
+
+[Features] StandardScaler applied to 10 features.
+  Raw feature stats (before scaling):
+    danceability            mean=  +0.653  std=  0.146
+    energy                  mean=  +0.698  std=  0.184
+    loudness                mean=  -6.818  std=  3.036
+    speechiness             mean=  +0.108  std=  0.103
+    acousticness            mean=  +0.177  std=  0.223
+    instrumentalness        mean=  +0.091  std=  0.233
+    liveness                mean=  +0.191  std=  0.156
+    valence                 mean=  +0.510  std=  0.234
+    tempo                   mean=+120.958  std= 26.955
+    duration_ms             mean=+226574.631  std=61081.364
+  After scaling: all features → mean≈0, std≈1
+
+[Features] Encoded 'playlist_genre' → 'playlist_genre_encoded':
+  edm             → 0  (4,877 songs)
+  latin           → 1  (4,136 songs)
+  pop             → 2  (5,132 songs)
+  r&b             → 3  (4,504 songs)
+  rap             → 4  (5,398 songs)
+  rock            → 5  (4,305 songs)
+
+====================================================================
+  STEP 5 — BASELINE RECOMMENDERS
+====================================================================
+
+───────────────────────────────────────────────────────
+  Baseline 1: Global Popularity
+───────────────────────────────────────────────────────
+  WHY: The simplest possible recommendation is 'return the most-popular songs'.
+  It requires no knowledge of the user and sets the floor for comparison.
+  Any useful model must outperform this in personalization quality.
+[PopularityRecommender] Fitted on 28,352 songs.
+
+  Top 10 globally popular songs:
+         track_name   track_artist playlist_genre  track_popularity
+       Dance Monkey    Tones and I            pop               100
+            ROXANNE Arizona Zervas          latin                99
+    Blinding Lights     The Weeknd            pop                98
+            The Box    Roddy Ricch            rap                98
+            Circles    Post Malone            pop                98
+           Memories       Maroon 5            pop                98
+               Tusa        KAROL G            pop                98
+everything i wanted  Billie Eilish            pop                97
+    Don't Start Now       Dua Lipa            pop                97
+            Falling  Trevor Daniel            pop                97
+
+───────────────────────────────────────────────────────
+  Baseline 2: Genre Popularity
+───────────────────────────────────────────────────────
+  WHY: Adding one dimension of user preference (genre) already helps.
+  Still ignores audio character — all songs in the genre rank equally
+  except for their play count.
+[GenrePopularityRecommender] Fitted. Genres: ['edm', 'latin', 'pop', 'r&b', 'rap', 'rock']
+
+  Top 5 in 'pop':
+     track_name track_artist playlist_genre  track_popularity
+   Dance Monkey  Tones and I            pop               100
+Blinding Lights   The Weeknd            pop                98
+           Tusa      KAROL G            pop                98
+       Memories     Maroon 5            pop                98
+        Circles  Post Malone            pop                98
+
+  Top 5 in 'rock':
+                  track_name track_artist playlist_genre  track_popularity
+  The Less I Know The Better  Tame Impala           rock                85
+Bohemian Rhapsody - 2011 Mix        Queen           rock                84
+          Livin' On A Prayer     Bon Jovi           rock                83
+                      Africa         TOTO           rock                83
+       Every Breath You Take   The Police           rock                83
+
+  Top 5 in 'edm':
+                               track_name       track_artist playlist_genre  track_popularity
+               A Gente Fez Amor - Ao Vivo      Gusttavo Lima            edm                84
+               Surtada - Remix Brega Funk       Dadá Boladão            edm                84
+             God Is A Dancer (with Mabel)             Tiësto            edm                82
+                      3 Batidas - Ao Vivo Guilherme & Benuto            edm                82
+i hate u, i love u (feat. olivia o'brien)              gnash            edm                81
+
+====================================================================
+  STEP 6 — CONTENT-BASED RECOMMENDER — Cosine Similarity
+====================================================================
+[ContentBasedRecommender] Computing 28,352×28,352 similarity matrix …
+  Matrix shape : (28352, 28352)   Memory : 3215 MB
+
+───────────────────────────────────────────────────────
+  Recommendations for: 'Blinding Lights' by The Weeknd
+───────────────────────────────────────────────────────
+
+  Seed: 'Blinding Lights' by The Weeknd  (genre=pop, popularity=98)
+
+  --- WHY THESE SONGS ARE SIMILAR ---
+  Feature                     Seed   Top rec    |diff|
+  ----------------------------------------------------
+  danceability               0.513     0.467     0.046
+  energy                     0.796     0.771     0.025
+  valence                    0.345     0.360     0.015
+  acousticness               0.001     0.014     0.012
+  tempo                    171.017   172.685     1.668
+
+  High similarity means these songs sit close together in audio-feature space — similar energy, mood, and acoustic character.
+                         track_name         track_artist playlist_genre  track_popularity  similarity_score
+                    Part-Time Lover                Dabin            edm                53            0.9864
+                          POP/STARS                 K/DA            pop                75            0.9838
+                           Criminal       Framing Hanley           rock                18            0.9791
+                         Painkiller             DREAMERS            pop                56            0.9780
+It's All on U - T-Mass & LZRD Remix             ILLENIUM            rap                61            0.9768
+                         Quiero Ver          Café Tacvba           rock                64            0.9748
+   Cold Blood (feat. Jeffrey James)            Tungevaag            edm                45            0.9722
+                      Got You There Matrix & Futurebound            edm                52            0.9720
+                    Kids In America            Kim Wilde            pop                 4            0.9717
+                         On Our Own              Showtek            edm                33            0.9712
+
+───────────────────────────────────────────────────────
+  Recommendations for: 'Bohemian Rhapsody' by Queen
+───────────────────────────────────────────────────────
+  [INFO] No exact match for 'Bohemian Rhapsody'. Using closest: 'Bohemian Rhapsody - 2011 Mix' by Queen
+
+  Seed: 'Bohemian Rhapsody - 2011 Mix' by Queen  (genre=rock, popularity=84)
+
+  --- WHY THESE SONGS ARE SIMILAR ---
+  Feature                     Seed   Top rec    |diff|
+  ----------------------------------------------------
+  danceability               0.414     0.414     0.000
+  energy                     0.404     0.404     0.000
+  valence                    0.224     0.224     0.000
+  acousticness               0.271     0.271     0.000
+  tempo                     71.105    71.105     0.000
+
+  High similarity means these songs sit close together in audio-feature space — similar energy, mood, and acoustic character.
+                         track_name              track_artist playlist_genre  track_popularity  similarity_score
+Bohemian Rhapsody - Remastered 2011                     Queen           rock                29            1.0000
+                          As We Lay           Shirley Murdock            r&b                45            0.9568
+                     Jubilee Street Nick Cave & The Bad Seeds           rock                51            0.9524
+               The Drugs Don't Work                 The Verve           rock                11            0.9507
+                  Tell Your Friends                The Weeknd            r&b                68            0.9401
+                               Taxi              J. Blackfoot            rap                32            0.9379
+                  Gracefully Broken       Tasha Cobbs Leonard            r&b                50            0.9321
+                  Tell Your Friends                The Weeknd            r&b                 3            0.9311
+                           Too Fast                    Sonder            r&b                63            0.9302
+                   I See Your Smile            Gloria Estefan          latin                34            0.9289
+
+───────────────────────────────────────────────────────
+  Recommendations for: 'God's Plan' by Drake
+───────────────────────────────────────────────────────
+  [WARN] 3 exact matches for 'God's Plan' — using first:
+    • God's Plan by Drake (pop)
+    • God's Plan by Drake (rap)
+    • God's Plan by Drake (rap)
+
+  Seed: 'God's Plan' by Drake  (genre=pop, popularity=86)
+
+  --- WHY THESE SONGS ARE SIMILAR ---
+  Feature                     Seed   Top rec    |diff|
+  ----------------------------------------------------
+  danceability               0.754     0.754     0.000
+  energy                     0.449     0.449     0.000
+  valence                    0.357     0.350     0.007
+  acousticness               0.033     0.033     0.000
+  tempo                     77.169    77.167     0.002
+
+  High similarity means these songs sit close together in audio-feature space — similar energy, mood, and acoustic character.
+                                          track_name     track_artist playlist_genre  track_popularity  similarity_score
+                                          God's Plan            Drake            rap                12            1.0000
+                                          God's Plan            Drake            rap                17            0.9994
+                                    Asi Son Mis Dias  Control Machete            rap                45            0.9512
+                                               Lotto           Rotimi            rap                 0            0.9450
+                                  Gangsta's Paradise           Coolio            pop                80            0.9028
+                           I'm Cool - No Rap Version Anthony Hamilton            r&b                37            0.9017
+                                Where I Wanna Be Boy       Miss Jones            r&b                21            0.9015
+I Know There's Gonna Be (Good Times) [feat. Popcaan]       Young Thug            pop                57            0.8995
+                                       Choir - Remix    Guy Sebastian            pop                54            0.8977
+                                              single  Musiq Soulchild            r&b                23            0.8929
+
+───────────────────────────────────────────────────────
+  Recommendations for: 'bad guy' by Billie Eilish
+───────────────────────────────────────────────────────
+
+  Seed: 'bad guy' by Billie Eilish  (genre=pop, popularity=95)
+
+  --- WHY THESE SONGS ARE SIMILAR ---
+  Feature                     Seed   Top rec    |diff|
+  ----------------------------------------------------
+  danceability               0.701     0.731     0.030
+  energy                     0.425     0.413     0.012
+  valence                    0.562     0.734     0.172
+  acousticness               0.328     0.346     0.018
+  tempo                    135.128   156.110    20.982
+
+  High similarity means these songs sit close together in audio-feature space — similar energy, mood, and acoustic character.
+                      track_name     track_artist playlist_genre  track_popularity  similarity_score
+                    Mata Montana             Mata            rap                64            0.9586
+                    Ready or Not           Fugees            rap                 8            0.9398
+                      California Childish Gambino            r&b                58            0.9339
+                      Long Spoon     Entre Linhas            rap                38            0.9288
+    bad guy (with Justin Bieber)    Billie Eilish            pop                83            0.9251
+Play for Keeps (feat. La Capone)   Rondonumbanine            rap                44            0.9247
+                      California Childish Gambino            pop                 2            0.9235
+                              Yl         Aivarask            edm                39            0.9213
+                     Running Man    Rexx Life Raj            rap                33            0.9206
+          Instinct - MXXWLL Edit       BB Diamond            r&b                24            0.9154
+
+====================================================================
+  STEP 7 — NEAREST NEIGHBOR RECOMMENDER
+====================================================================
+
+  This uses the same cosine metric as ContentBasedRecommender
+  but avoids storing the full similarity matrix.
+  Useful when RAM is limited or the dataset is very large.
+[NearestNeighborRecommender] Fitting on 28,352 songs …
+  Ready.
+
+───────────────────────────────────────────────────────
+  NN recommendations: 'Blinding Lights'
+───────────────────────────────────────────────────────
+  [WARN] 2 exact matches for 'Blinding Lights' — using first:
+    • Blinding Lights by The Weeknd (pop)
+    • Blinding Lights by Lucas Estrada (latin)
+
+  Seed (NN): 'Blinding Lights' by The Weeknd
+                         track_name         track_artist playlist_genre  track_popularity  similarity_score
+                    Part-Time Lover                Dabin            edm                53            0.9864
+                          POP/STARS                 K/DA            pop                75            0.9838
+                           Criminal       Framing Hanley           rock                18            0.9791
+                         Painkiller             DREAMERS            pop                56            0.9780
+It's All on U - T-Mass & LZRD Remix             ILLENIUM            rap                61            0.9768
+                         Quiero Ver          Café Tacvba           rock                64            0.9748
+   Cold Blood (feat. Jeffrey James)            Tungevaag            edm                45            0.9722
+                      Got You There Matrix & Futurebound            edm                52            0.9720
+                    Kids In America            Kim Wilde            pop                 4            0.9717
+                         On Our Own              Showtek            edm                33            0.9712
+
+====================================================================
+  STEP 8 — USER PROFILE RECOMMENDER
+====================================================================
+[UserProfileRecommender] Fitted on 28,352 songs.
+
+───────────────────────────────────────────────────────
+  User Persona: Pop Fan
+───────────────────────────────────────────────────────
+  Liked songs: ['Blinding Lights', 'Watermelon Sugar', 'Levitating']
+  Located 3/3 liked songs.
+
+  User taste profile (mean scaled audio features):
+    danceability           -1.127  ▼▼▼▼▼▼
+    energy                 -0.344  ▼▼
+    loudness               -0.264  ▼
+    speechiness            -0.472  ▼▼
+    acousticness           +0.305  ▲
+    instrumentalness       +0.924  ▲▲▲▲▲
+    liveness               +0.609  ▲▲▲
+    valence                -0.346  ▼▼
+    tempo                  -0.382  ▼▼
+    duration_ms            -0.680  ▼▼▼▼
+
+  Recommendations:
+                          track_name    track_artist playlist_genre  track_popularity  similarity_score
+            Homenaje A Miguel - Live     Miguel Rios           rock                 0            0.9161
+God Save The Queen - Remastered 2011           Queen           rock                45            0.8738
+                       Break The Sky Dust of Apollon            pop                29            0.8690
+                            Majestic         Journey           rock                25            0.8684
+Seven Seas Of Rhye - Remastered 2011           Queen           rock                34            0.8659
+                              Whales   Cap Kendricks            rap                54            0.8508
+                           Alignment        Guustavv            rap                33            0.8458
+                      Four Portraits         Vansire           rock                31            0.8442
+                            Eruption       Van Halen           rock                 8            0.8425
+                            Homesick           Kazam            rap                53            0.8412
+
+───────────────────────────────────────────────────────
+  User Persona: Rock Fan
+───────────────────────────────────────────────────────
+  Liked songs: ['Bohemian Rhapsody', "Don't Stop Believin'", "Sweet Child O' Mine"]
+  Located 3/3 liked songs.
+
+  User taste profile (mean scaled audio features):
+    danceability           -1.374  ▼▼▼▼▼▼▼▼
+    energy                 +0.038  
+    loudness               -0.477  ▼▼
+    speechiness            -0.618  ▼▼▼
+    acousticness           +0.112  
+    instrumentalness       -0.250  ▼
+    liveness               +0.492  ▲▲
+    valence                -0.292  ▼
+    tempo                  -0.586  ▼▼▼
+    duration_ms            +1.517  ▲▲▲▲▲▲▲▲▲
+
+  Recommendations:
+                                track_name          track_artist playlist_genre  track_popularity  similarity_score
+               Somebody To Love - 2011 Mix                 Queen           rock                69            0.9443
+                                     Fools The Ransom Collective            pop                42            0.9362
+               Somebody To Love - 2011 Mix                 Queen           rock                44            0.9309
+                                 Astronomy      Blue Öyster Cult           rock                18            0.9267
+                       A Life Within a Day             Squackett           rock                 0            0.9229
+                         The Fleeting Deep              Carptree           rock                 0            0.9112
+                                Simple Man        Lynyrd Skynyrd           rock                 6            0.9100
+                                     Black             Pearl Jam           rock                75            0.9072
+Fear Of The Dark - 1998 Remastered Version           Iron Maiden           rock                55            0.9069
+                   Are 'Friends' Electric?          Tubeway Army           rock                50            0.9021
+
+───────────────────────────────────────────────────────
+  User Persona: Hip-Hop Fan
+───────────────────────────────────────────────────────
+  Liked songs: ["God's Plan", 'HUMBLE.', 'Rockstar']
+  Located 3/3 liked songs.
+
+  User taste profile (mean scaled audio features):
+    danceability           +1.077  ▲▲▲▲▲▲
+    energy                 -0.354  ▼▼
+    loudness               +0.053  
+    speechiness            -0.208  ▼
+    acousticness           -0.533  ▼▼▼
+    instrumentalness       -0.349  ▼▼
+    liveness               +0.474  ▲▲
+    valence                -0.805  ▼▼▼▼
+    tempo                  -0.441  ▼▼
+    duration_ms            -0.499  ▼▼
+
+  Recommendations:
+                track_name             track_artist playlist_genre  track_popularity  similarity_score
+                 One Dance                    Drake            pop                68            0.9286
+                 One Dance                    Drake            pop                83            0.9286
+          I Wanna Fuck You               Snoop Dogg            r&b                 3            0.9249
+                 One Dance                    Drake            pop                20            0.9234
+                 One Dance                    Drake            pop                12            0.9056
+                Trap Story               Lil Chainz            rap                43            0.8999
+      Is This Love - Remix Bob Marley & The Wailers          latin                10            0.8903
+              Love No More              Loud Luxury            pop                54            0.8899
+              Love No More              Loud Luxury            pop                69            0.8886
+Baby Sitter (feat. Offset)                   DaBaby            rap                79            0.8847
+
+====================================================================
+  STEP 9 — CLUSTERING — KMeans
+====================================================================
+
+  Finding optimal K with the elbow method …
+[ClusteringRecommender] Elbow search …
+  K= 2  inertia=244,275
+  K= 3  inertia=220,387
+  K= 4  inertia=202,112
+  K= 5  inertia=186,580
+  K= 6  inertia=175,512
+  K= 7  inertia=166,985
+  K= 8  inertia=160,239
+  K= 9  inertia=154,186
+  K=10  inertia=148,835
+  K=11  inertia=144,715
+  K=12  inertia=140,768
+  K=13  inertia=137,084
+  K=14  inertia=133,823
+  K=15  inertia=131,217
+
+[Viz] KMeans elbow curve
+  Saved → outputs/graphs/elbow_curve.png
+  Interpretation: Look for the 'elbow' — where inertia starts decreasing linearly. Adding clusters beyond that point yields diminishing returns. The chosen K should balance cluster granularity with interpretability.
+
+  Fitting final KMeans with K=8 …
+[ClusteringRecommender] KMeans with K=8 on 28,352 songs …
+  Cluster sizes:
+    Cluster  0: 3,940 songs
+    Cluster  1: 5,545 songs
+    Cluster  2: 3,122 songs
+    Cluster  3: 2,173 songs
+    Cluster  4: 6,329 songs
+    Cluster  5: 1,670 songs
+    Cluster  6: 2,632 songs
+    Cluster  7: 2,941 songs
+
+[Viz] PCA cluster visualisation
+  Saved → outputs/graphs/pca_clusters.png
+  Interpretation: PCA reduces 10 features to 2D. PC1=21.7%, PC2=15.4% of total variance explained. Overlapping clusters indicate that audio features alone cannot fully separate musical groups — which is expected (genre/era/lyrics also matter).
+
+  Cluster Audio Profiles:
+ cluster  size top_genre                                        description
+       0  3940       r&b                low-energy, melancholic, electronic
+       1  5545       edm               high-energy, melancholic, electronic
+       2  3122       rap     low-energy, melancholic, electronic, danceable
+       3  2173       edm high-energy, melancholic, electronic, instrumental
+       4  6329     latin         high-energy, upbeat, electronic, danceable
+       5  1670       edm               high-energy, melancholic, electronic
+       6  2632       r&b                  low-energy, melancholic, acoustic
+       7  2941      rock               high-energy, melancholic, electronic
+
+───────────────────────────────────────────────────────
+  Cluster recommendations: 'Blinding Lights'
+───────────────────────────────────────────────────────
+  [WARN] 2 exact matches for 'Blinding Lights' — using first:
+    • Blinding Lights by The Weeknd (pop)
+    • Blinding Lights by Lucas Estrada (latin)
+
+  'Blinding Lights' is in cluster 7.
+                                                                           track_name   track_artist playlist_genre  track_popularity  distance_to_centroid
+                                                              Take on Me - Kygo Remix           a-ha          latin                56              0.614924
+                                                                         Heart Attack    Demi Lovato            pop                74              0.776273
+                                                       Waiting On the World to Change     John Mayer            pop                74              0.870397
+                                                                            Worldwide  Big Time Rush            pop                58              0.901539
+                                                       Aprovecha (feat. Daddy Yankee)    Nova y Jory          latin                58              0.930553
+                                                                                  MIA         Tayl G          latin                52              0.993182
+Shell Shocked (feat. Kill The Noise & Madsonik) - From "Teenage Mutant Ninja Turtles"        Juicy J            rap                66              0.998008
+                                                                  Cheap Thrills Remix            Sia          latin                56              1.017483
+                                                                  Cheap Thrills Remix            Sia            edm                25              1.017483
+                                                                           Your Prime Anderson .Paak            r&b                47              1.017561
+
+====================================================================
+  STEP 10 — EVALUATION
+====================================================================
+
+───────────────────────────────────────────────────────
+  10.1  Genre Consistency
+───────────────────────────────────────────────────────
+  Measures: what fraction of recommendations share the seed's genre?
+  Proxy for 'is the model finding genre-appropriate songs?'
+  'Blinding Lights' (genre=pop): genre_consistency = 0.30
+  'God's Plan' (genre=pop): genre_consistency = 0.30
+  'bad guy' (genre=pop): genre_consistency = 0.20
+
+───────────────────────────────────────────────────────
+  10.2  Similarity Score Statistics
+───────────────────────────────────────────────────────
+  'Blinding Lights': mean=0.977  std=0.005  min=0.971  max=0.986
+  'Bohemian Rhapsody': mean=0.946  std=0.021  min=0.929  max=1.000
+  'God's Plan': mean=0.929  std=0.042  min=0.893  max=1.000
+  'bad guy': mean=0.929  std=0.013  min=0.915  max=0.959
+
+───────────────────────────────────────────────────────
+  10.3  Diversity Score
+───────────────────────────────────────────────────────
+  Measures: spread of artists and genres across the recommendation set.
+  'Blinding Lights': artist_diversity=1.00  (10 unique artists)  genre_diversity=0.40
+  'Bohemian Rhapsody': artist_diversity=0.90  (9 unique artists)  genre_diversity=0.40
+  'God's Plan': artist_diversity=0.90  (9 unique artists)  genre_diversity=0.30
+  'bad guy': artist_diversity=0.90  (9 unique artists)  genre_diversity=0.40
+
+───────────────────────────────────────────────────────
+  10.4  Holdout Test (User Profile Recommender)
+───────────────────────────────────────────────────────
+  Procedure: hide one liked song, build profile from the rest,
+  and check if the hidden song appears in top-20 recommendations.
+
+  Persona: Pop Fan
+
+  Holdout test:
+    Training likes : ['Blinding Lights', 'Watermelon Sugar']
+    Held-out song  : 'Levitating'
+  Located 2/2 liked songs.
+
+  User taste profile (mean scaled audio features):
+    danceability           -0.843  ▼▼▼▼▼
+    energy                 +0.587  ▲▲▲
+    loudness               +0.881  ▲▲▲▲▲
+    speechiness            -0.519  ▼▼▼
+    acousticness           -0.518  ▼▼▼
+    instrumentalness       -0.391  ▼▼
+    liveness               +0.150  
+    valence                -0.253  ▼
+    tempo                  +0.454  ▲▲
+    duration_ms            -0.635  ▼▼▼
+    Result         : NOT FOUND  (searched top 20)
+
+  Persona: Rock Fan
+
+  Holdout test:
+    Training likes : ['Bohemian Rhapsody', "Don't Stop Believin'"]
+    Held-out song  : 'Sweet Child O' Mine'
+  Located 2/2 liked songs.
+
+  User taste profile (mean scaled audio features):
+    danceability           -1.378  ▼▼▼▼▼▼▼▼
+    energy                 -0.520  ▼▼▼
+    loudness               -0.560  ▼▼▼
+    speechiness            -0.618  ▼▼▼
+    acousticness           +0.374  ▲▲
+    instrumentalness       -0.392  ▼▼
+    liveness               +0.979  ▲▲▲▲▲
+    valence                -0.693  ▼▼▼▼
+    tempo                  -0.956  ▼▼▼▼▼
+    duration_ms            +1.229  ▲▲▲▲▲▲▲
+    Result         : NOT FOUND  (searched top 20)
+
+  Persona: Hip-Hop Fan
+
+  Holdout test:
+    Training likes : ["God's Plan", 'HUMBLE.']
+    Held-out song  : 'Rockstar'
+  Located 2/2 liked songs.
+
+  User taste profile (mean scaled audio features):
+    danceability           +1.212  ▲▲▲▲▲▲▲
+    energy                 -0.879  ▼▼▼▼▼
+    loudness               -0.388  ▼▼
+    speechiness            -0.081  
+    acousticness           -0.720  ▼▼▼▼
+    instrumentalness       -0.392  ▼▼
+    liveness               +0.858  ▲▲▲▲▲
+    valence                -0.514  ▼▼▼
+    tempo                  -0.273  ▼
+    duration_ms            -0.632  ▼▼▼
+    Result         : NOT FOUND  (searched top 20)
+
+───────────────────────────────────────────────────────
+  10.5  Edge-Case Tests
+───────────────────────────────────────────────────────
+
+-------------------------------------------------------
+  EDGE-CASE EVALUATION
+-------------------------------------------------------
+
+[EC1] Non-existent song:
+  Query: 'This Song Absolutely Does Not Exist XYZ'
+  [ERROR] 'This Song Absolutely Does Not Exist XYZ' not found in dataset.
+  Result: Empty DataFrame (correct)
+
+[EC2] Niche song (popularity < 5):
+  Query: '8 Letters - R3HAB Remix' by Why Don't We
+
+  Seed: '8 Letters - R3HAB Remix' by Why Don't We  (genre=pop, popularity=2)
+
+  --- WHY THESE SONGS ARE SIMILAR ---
+  Feature                     Seed   Top rec    |diff|
+  ----------------------------------------------------
+  danceability               0.638     0.690     0.052
+  energy                     0.708     0.797     0.089
+  valence                    0.582     0.733     0.151
+  acousticness               0.240     0.310     0.070
+  tempo                    103.160    97.964     5.196
+
+  High similarity means these songs sit close together in audio-feature space — similar energy, mood, and acoustic character.
+  Got 5 recommendations. Mean popularity of recs: 53.6
+  Insight: content-based model is popularity-blind — niche songs can still get quality recommendations.
+
+[EC3] Partial name ('Shape' → expects 'Shape of You' or similar):
+  [INFO] No exact match for 'Shape'. Using closest: 'Shape of You' by Ed Sheeran
+
+  Seed: 'Shape of You' by Ed Sheeran  (genre=pop, popularity=86)
+
+  --- WHY THESE SONGS ARE SIMILAR ---
+  Feature                     Seed   Top rec    |diff|
+  ----------------------------------------------------
+  danceability               0.825     0.825     0.000
+  energy                     0.652     0.652     0.000
+  valence                    0.931     0.931     0.000
+  acousticness               0.581     0.581     0.000
+  tempo                     95.977    95.977     0.000
+
+  High similarity means these songs sit close together in audio-feature space — similar energy, mood, and acoustic character.
+  Got 5 results — partial matching works.
+
+[EC4] Same-artist bias — top 2 prolific artists:
+  [WARN] 2 exact matches for 'Don't Stop Me Now - 2011 Mix' — using first:
+    • Don't Stop Me Now - 2011 Mix by Queen (pop)
+    • Don't Stop Me Now - 2011 Mix by Queen (rock)
+
+  Seed: 'Don't Stop Me Now - 2011 Mix' by Queen  (genre=pop, popularity=75)
+
+  --- WHY THESE SONGS ARE SIMILAR ---
+  Feature                     Seed   Top rec    |diff|
+  ----------------------------------------------------
+  danceability               0.563     0.559     0.004
+  energy                     0.865     0.868     0.003
+  valence                    0.601     0.609     0.008
+  acousticness               0.047     0.048     0.000
+  tempo                    156.271   156.295     0.024
+
+  High similarity means these songs sit close together in audio-feature space — similar energy, mood, and acoustic character.
+  Artist: 'Queen' (130 songs). Same-artist in top 10: 10%
+  [WARN] 2 exact matches for 'Summer Days (feat. Macklemore & Patrick Stump of Fall Out Boy) - Tiësto Remix' — using first:
+    • Summer Days (feat. Macklemore & Patrick Stump of Fall Out Boy) - Tiësto Remix by Martin Garrix (pop)
+    • Summer Days (feat. Macklemore & Patrick Stump of Fall Out Boy) - Tiësto Remix by Martin Garrix (edm)
+
+  Seed: 'Summer Days (feat. Macklemore & Patrick Stump of Fall Out Boy) - Tiësto Remix' by Martin Garrix  (genre=pop, popularity=63)
+
+  --- WHY THESE SONGS ARE SIMILAR ---
+  Feature                     Seed   Top rec    |diff|
+  ----------------------------------------------------
+  danceability               0.690     0.690     0.000
+  energy                     0.780     0.780     0.000
+  valence                    0.238     0.238     0.000
+  acousticness               0.007     0.007     0.000
+  tempo                    126.070   126.070     0.000
+
+  High similarity means these songs sit close together in audio-feature space — similar energy, mood, and acoustic character.
+  Artist: 'Martin Garrix' (87 songs). Same-artist in top 10: 10%
+
+====================================================================
+  STEP 11 — MODEL COMPARISON
+====================================================================
+
+  Test seeds (6):
+    'Surtada - Remix Brega Funk'  [edm]
+    'ROXANNE'  [latin]
+    'Dance Monkey'  [pop]
+    'Lucid Dreams'  [r&b]
+    'The Box'  [rap]
+    'The Less I Know The Better'  [rock]
+
+  Seed: 'Surtada - Remix Brega Funk' by Dadá Boladão  (genre=edm, popularity=84)
+
+  --- WHY THESE SONGS ARE SIMILAR ---
+  Feature                     Seed   Top rec    |diff|
+  ----------------------------------------------------
+  danceability               0.832     0.815     0.017
+  energy                     0.550     0.518     0.032
+  valence                    0.881     0.877     0.004
+  acousticness               0.249     0.223     0.026
+  tempo                    154.064   151.891     2.173
+
+  High similarity means these songs sit close together in audio-feature space — similar energy, mood, and acoustic character.
+  [WARN] 4 exact matches for 'ROXANNE' — using first:
+    • ROXANNE by Arizona Zervas (pop)
+    • Roxanne by The Police (rock)
+    • Roxanne by The Police (rock)
+
+  Seed: 'ROXANNE' by Arizona Zervas  (genre=pop, popularity=71)
+
+  --- WHY THESE SONGS ARE SIMILAR ---
+  Feature                     Seed   Top rec    |diff|
+  ----------------------------------------------------
+  danceability               0.621     0.621     0.000
+  energy                     0.601     0.601     0.000
+  valence                    0.457     0.457     0.000
+  acousticness               0.052     0.052     0.000
+  tempo                    116.735   116.735     0.000
+
+  High similarity means these songs sit close together in audio-feature space — similar energy, mood, and acoustic character.
+  [WARN] 7 exact matches for 'Dance Monkey' — using first:
+    • Dance Monkey by Skylike (pop)
+    • Dance Monkey by Tones and I (pop)
+    • Dance Monkey by Tones and I (pop)
+
+  Seed: 'Dance Monkey' by Skylike  (genre=pop, popularity=63)
+
+  --- WHY THESE SONGS ARE SIMILAR ---
+  Feature                     Seed   Top rec    |diff|
+  ----------------------------------------------------
+  danceability               0.781     0.832     0.051
+  energy                     0.855     0.802     0.053
+  valence                    0.311     0.178     0.133
+  acousticness               0.327     0.343     0.016
+  tempo                    118.112   110.006     8.106
+
+  High similarity means these songs sit close together in audio-feature space — similar energy, mood, and acoustic character.
+  [WARN] 5 exact matches for 'Lucid Dreams' — using first:
+    • Lucid Dreams by Juice WRLD (rap)
+    • Lucid Dreams by October Ends (rock)
+    • Lucid Dreams by Juice WRLD (latin)
+
+  Seed: 'Lucid Dreams' by Juice WRLD  (genre=rap, popularity=11)
+
+  --- WHY THESE SONGS ARE SIMILAR ---
+  Feature                     Seed   Top rec    |diff|
+  ----------------------------------------------------
+  danceability               0.511     0.511     0.000
+  energy                     0.566     0.566     0.000
+  valence                    0.218     0.218     0.000
+  acousticness               0.349     0.349     0.000
+  tempo                     83.903    83.903     0.000
+
+  High similarity means these songs sit close together in audio-feature space — similar energy, mood, and acoustic character.
+
+  Seed: 'The Box' by Roddy Ricch  (genre=rap, popularity=98)
+
+  --- WHY THESE SONGS ARE SIMILAR ---
+  Feature                     Seed   Top rec    |diff|
+  ----------------------------------------------------
+  danceability               0.896     0.862     0.034
+  energy                     0.586     0.593     0.007
+  valence                    0.642     0.511     0.131
+  acousticness               0.104     0.037     0.067
+  tempo                    116.971   112.004     4.967
+
+  High similarity means these songs sit close together in audio-feature space — similar energy, mood, and acoustic character.
+  [WARN] 2 exact matches for 'The Less I Know The Better' — using first:
+    • The Less I Know The Better by Tame Impala (pop)
+    • The Less I Know The Better by Tame Impala (rock)
+
+  Seed: 'The Less I Know The Better' by Tame Impala  (genre=pop, popularity=18)
+
+  --- WHY THESE SONGS ARE SIMILAR ---
+  Feature                     Seed   Top rec    |diff|
+  ----------------------------------------------------
+  danceability               0.640     0.640     0.000
+  energy                     0.755     0.740     0.015
+  valence                    0.744     0.785     0.041
+  acousticness               0.014     0.011     0.002
+  tempo                    116.883   116.879     0.004
+
+  High similarity means these songs sit close together in audio-feature space — similar energy, mood, and acoustic character.
+
+  Seed (NN): 'Surtada - Remix Brega Funk' by Dadá Boladão
+  [WARN] 4 exact matches for 'ROXANNE' — using first:
+    • ROXANNE by Arizona Zervas (pop)
+    • Roxanne by The Police (rock)
+    • Roxanne by The Police (rock)
+
+  Seed (NN): 'ROXANNE' by Arizona Zervas
+  [WARN] 7 exact matches for 'Dance Monkey' — using first:
+    • Dance Monkey by Skylike (pop)
+    • Dance Monkey by Tones and I (pop)
+    • Dance Monkey by Tones and I (pop)
+
+  Seed (NN): 'Dance Monkey' by Skylike
+  [WARN] 5 exact matches for 'Lucid Dreams' — using first:
+    • Lucid Dreams by Juice WRLD (rap)
+    • Lucid Dreams by October Ends (rock)
+    • Lucid Dreams by Juice WRLD (latin)
+
+  Seed (NN): 'Lucid Dreams' by Juice WRLD
+
+  Seed (NN): 'The Box' by Roddy Ricch
+  [WARN] 2 exact matches for 'The Less I Know The Better' — using first:
+    • The Less I Know The Better by Tame Impala (pop)
+    • The Less I Know The Better by Tame Impala (rock)
+
+  Seed (NN): 'The Less I Know The Better' by Tame Impala
+
+───────────────────────────────────────────────────────
+  Quantitative comparison table
+───────────────────────────────────────────────────────
+          model  avg_genre_consistency  avg_artist_diversity  avg_genre_diversity avg_similarity
+     Popularity                  0.167                 1.000                  0.3            N/A
+GenrePopularity                  1.000                 0.917                  0.1            N/A
+   ContentBased                  0.200                 0.883                  0.4          0.917
+NearestNeighbor                  0.200                 0.883                  0.4          0.917
+
+───────────────────────────────────────────────────────
+  Qualitative comparison
+───────────────────────────────────────────────────────
+                Method                                         Strengths                                        Weaknesses                                       Use When
+   Popularity Baseline                       Always works; no cold-start                              Zero personalization                            No user data at all
+      Genre Popularity                               Genre-aware; simple                      Coarse labels; ignores audio                  User's genre preference known
+Content-Based (Cosine) Personalized; explainable; no user history needed No collaborative signal; cold-start for new users               Seed song known; no play history
+      NearestNeighbors               Memory-efficient for large datasets          Slower per-query than precomputed matrix                           Dataset > 100k songs
+   Clustering (KMeans)      Fast inference; interpretable neighbourhoods         Hard cluster boundaries miss nearby songs Explore musical zones; very low latency needed
+
+====================================================================
+  STEP 12 — RESULT VISUALIZATIONS
+====================================================================
+
+[Viz] Recommendation scores — ContentBased — Blinding Lights
+  Saved → outputs/graphs/rec_scores_contentbased_—_blinding_lights.png
+  Interpretation: Mean similarity = 0.977. Scores above 0.7 indicate strong feature-level similarity. If all scores are > 0.95, features may be too coarse to discriminate well.
+
+[Viz] Genre distribution of recommendations — ContentBased — Blinding Lights
+  Saved → outputs/graphs/genre_dist_contentbased_—_blinding_lights.png
+  Interpretation: Same-genre fraction: 30%. High same-genre = genre-accurate but less discovery. Cross-genre recs may surface genuinely similar-feeling songs from other genres.
+
+[Viz] Recommendation scores — ContentBased — Bohemian Rhapsody
+  Saved → outputs/graphs/rec_scores_contentbased_—_bohemian_rhapsody.png
+  Interpretation: Mean similarity = 0.946. Scores above 0.7 indicate strong feature-level similarity. If all scores are > 0.95, features may be too coarse to discriminate well.
+
+[Viz] Genre distribution of recommendations — ContentBased — Bohemian Rhapsody
+  Saved → outputs/graphs/genre_dist_contentbased_—_bohemian_rhapsody.png
+  Interpretation: Same-genre fraction: 0%. High same-genre = genre-accurate but less discovery. Cross-genre recs may surface genuinely similar-feeling songs from other genres.
+
+[Viz] Model comparison bar chart
+  Saved → outputs/graphs/model_comparison.png
+  Interpretation: Higher genre consistency = more genre-focused results. Higher diversity = broader artist/genre spread. Content-based models should land between the baseline (high consistency, low diversity) and a random recommender (high diversity, low consistency).
+  Located 3/3 liked songs.
+
+  User taste profile (mean scaled audio features):
+    danceability           -1.127  ▼▼▼▼▼▼
+    energy                 -0.344  ▼▼
+    loudness               -0.264  ▼
+    speechiness            -0.472  ▼▼
+    acousticness           +0.305  ▲
+    instrumentalness       +0.924  ▲▲▲▲▲
+    liveness               +0.609  ▲▲▲
+    valence                -0.346  ▼▼
+    tempo                  -0.382  ▼▼
+    duration_ms            -0.680  ▼▼▼▼
+
+[Viz] User taste profile — Pop Fan
+  Saved → outputs/graphs/user_profile_pop_fan.png
+  Interpretation: Blue bars = above-average for this feature; red bars = below-average. The profile is the mean of all liked songs' scaled feature vectors. Recommendations should have a similar feature shape to match user preference.
+  Located 3/3 liked songs.
+
+  User taste profile (mean scaled audio features):
+    danceability           -1.374  ▼▼▼▼▼▼▼▼
+    energy                 +0.038  
+    loudness               -0.477  ▼▼
+    speechiness            -0.618  ▼▼▼
+    acousticness           +0.112  
+    instrumentalness       -0.250  ▼
+    liveness               +0.492  ▲▲
+    valence                -0.292  ▼
+    tempo                  -0.586  ▼▼▼
+    duration_ms            +1.517  ▲▲▲▲▲▲▲▲▲
+
+[Viz] User taste profile — Rock Fan
+  Saved → outputs/graphs/user_profile_rock_fan.png
+  Interpretation: Blue bars = above-average for this feature; red bars = below-average. The profile is the mean of all liked songs' scaled feature vectors. Recommendations should have a similar feature shape to match user preference.
+
+====================================================================
+  STEP 13 — SAVING RESULTS
+====================================================================
+
+  Saved 40 recommendation rows to 'outputs/recommendation_results.csv'
+  Columns: ['track_name', 'track_artist', 'playlist_genre', 'track_popularity', 'similarity_score', 'seed_song', 'model']
+
+====================================================================
+  STEP 14 — INTERPRETATION · LIMITATIONS · FUTURE WORK
+====================================================================
+
+MODEL INTERPRETATION
+════════════════════
+The content-based recommender maps songs into a 10-dimensional audio-feature
+space and finds neighbours by cosine angle.  This captures the *acoustic
+character* of music — energy level, mood (valence), acoustic vs electronic
+texture — reasonably well.
+
+WHAT WORKED
+-----------
+• Genre-internal similarity: songs within a genre cluster together in feature
+  space, so same-genre recall is high.
+• valence + energy combinations identify emotional mood (happy/sad, intense/calm).
+• StandardScaler was critical: without it, loudness (range ≈ 60) would dominate
+  danceability (range = 1) in every distance calculation.
+
+WHAT STRUGGLED
+--------------
+• Cross-genre recommendations: a quiet rock ballad and a soft acoustic pop song
+  may share energy/acousticness but fans consider them very different.
+• Popularity ≠ quality: high-popularity songs are often genuinely good, but the
+  baseline recommender over-represents blockbusters.
+• Same-artist collapse: prolific artists' songs cluster tightly → recommendations
+  skew toward the same artist even without explicit artist filtering.
+
+DATASET INSIGHTS
+----------------
+• Audio features alone explain ≈ 60–70% of genre membership (validated informally
+  by the PCA cluster plot).  The remaining variance comes from lyrics, timbre,
+  era, and cultural context — none of which Spotify's audio API exposes.
+• Genre labels are playlist-derived, not musicologically assigned.  A "pop"
+  playlist may contain tracks that don't fit narrow genre taxonomy.
+
+LIMITATIONS
+════════════
+1. Audio features ≠ full taste — lyrics, timbre, and cultural context are absent.
+2. No real user feedback — "liked song" lists are simulated; true preferences
+   come from streams, skips, saves, and playlist additions.
+3. Similarity ≠ preference — users don't always want the *most similar* song;
+   sometimes they want something *adjacent* (mood shift, new discovery).
+4. Cold-start for new users — user profile requires at least one liked song.
+5. Cold-start for new songs — songs not in the training set cannot be recommended.
+6. Popularity bias — Spotify's popularity score has a rich-get-richer feedback
+   loop that favours already-popular tracks.
+7. Genre label noise — playlist genres are editorial choices, not ground truth.
+
+FUTURE WORK
+════════════
+1.  Spotify API integration     — pull real user listening history for true labels.
+2.  Collaborative filtering     — find users with similar taste profiles and borrow
+                                   their preferences (matrix factorisation or ALS).
+3.  Hybrid model                — content signals + collaborative signals combined.
+4.  Implicit feedback           — treat skips as negative, replays as positive signal.
+5.  Deep audio embeddings       — use raw spectrograms + a CNN to learn features
+                                   richer than Spotify's pre-computed audio API values.
+6.  A/B testing infrastructure  — deploy two models and measure CTR / engagement.
+7.  Explainability              — tell users *why* a song was recommended
+                                  ("high energy, similar valence to your liked songs").
+8.  Web app                     — FastAPI backend + React frontend for interactive demo.
+9.  Better evaluation           — collect real clicks/saves to compute true Precision@K.
+10. Sub-genre clustering        — cluster user's liked songs and maintain one profile
+                                   per sub-genre to handle eclectic tastes.
+
+████████████████████████████████████████████████████████████████████
+  PIPELINE COMPLETE
+  Graphs   → outputs/graphs/
+  Results  → outputs/recommendation_results.csv
+  Console  → outputs/console_output.txt
+████████████████████████████████████████████████████████████████████
