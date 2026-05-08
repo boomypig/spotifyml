@@ -148,13 +148,3 @@ Since no user feedback exists, we use **proxy metrics**:
 - FastAPI + React web app for interactive demo
 - Better evaluation via real click/save data (Precision@K, NDCG)
 
----
-
-## Learning Goals
-
-This project is intentionally transparent:
-
-- Every data decision is printed with a `WHY:` explanation
-- Feature scaling rationale is documented at the function level
-- Model limitations are surfaced in the output, not hidden
-- Edge cases are tested and results are printed — not assumed to work
