@@ -1,9 +1,4 @@
 # Spotify Song Recommendation System
-
-A full-scale machine learning project implementing a content-based music
-recommendation system using Spotify's audio features — built to teach ML
-through reasoning, not just results.
-
 ---
 
 ## Overview
