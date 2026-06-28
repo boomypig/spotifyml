@@ -13,9 +13,7 @@ understands *why*, not just *what*.
 ## Problem
 
 Given a seed song (or a list of liked songs), return the N most sonically
-similar tracks from a 30k-song corpus.  The system must:
-
-- Explain why each song was recommended
+similar tracks from a 30k-song corpus.  The system must
 - Evaluate its own quality honestly (with no ground-truth labels)
 - Be comparable against simpler baselines
 
